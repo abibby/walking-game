@@ -1,13 +1,15 @@
 import { cartesian, polar, SphericalPoint } from 'coords'
 import { useGeolocation } from 'hooks/geolocation'
 import { get, set } from 'idb-keyval'
-import { centeredBoundingBox, map } from 'openstreetmaps'
+import { centeredBoundingBox, Element, map } from 'openstreetmaps'
 import { FunctionalComponent, h, render } from 'preact'
 import { useCallback, useEffect, useState } from 'preact/hooks'
+import { Map } from './components/map'
 
 const App: FunctionalComponent = () => {
     const [loc] = useGeolocation({ enableHighAccuracy: true })
     const [homePos, setHomePos] = useState<SphericalPoint | null>(null)
+    const [elements, setElements] = useState<Element[]>([])
 
     const pos: SphericalPoint | undefined = loc?.coords
 
@@ -15,9 +17,18 @@ const App: FunctionalComponent = () => {
         get('home').then((h: SphericalPoint) => {
             if (h !== undefined) {
                 setHomePos(h)
-                map(centeredBoundingBox(h, {longitude: 0.005, latitude: 0.005}))
-                    .then(m => m.elements.filter(e => e.type === 'node' && e.tags?.name).map(e => e.tags))
-                    .then(console.log)
+                map(
+                    centeredBoundingBox(h, {
+                        longitude: 0.005,
+                        latitude: 0.005,
+                    }),
+                ).then(m => {
+                    setElements(
+                        m.elements.filter(
+                            e => e.type === 'node' && e.tags?.name,
+                        ),
+                    )
+                })
             }
         })
     }, [])
@@ -34,17 +45,25 @@ const App: FunctionalComponent = () => {
         [pos, setHomePos],
     )
 
+    if (pos === undefined) {
+        return <div>Could not find location</div>
+    }
+
     return (
         <div>
             <h1>Game</h1>
             <div>
-                ({pos?.latitude}, {pos?.longitude})
+                ({pos.latitude}, {pos.longitude})
                 <button onClick={setHome}>Set Home</button>
             </div>
             <div>
                 <h3>Home</h3>({homePos?.latitude}, {homePos?.longitude})
             </div>
             {homePos && pos && <Coords home={homePos} pos={pos}></Coords>}
+
+            <div>
+                <Map elements={elements} scale={0.5} position={pos} />
+            </div>
         </div>
     )
 }

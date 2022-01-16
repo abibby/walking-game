@@ -1,4 +1,4 @@
-import { SphericalPoint } from "coords"
+import { SphericalPoint } from 'coords'
 
 interface BoundingBox {
     top: number
@@ -7,23 +7,26 @@ interface BoundingBox {
     right: number
 }
 
-export function centeredBoundingBox(center: SphericalPoint, size: SphericalPoint): BoundingBox {
+export function centeredBoundingBox(
+    center: SphericalPoint,
+    size: SphericalPoint,
+): BoundingBox {
     return {
-        top:    center.latitude + size.latitude,
+        top: center.latitude + size.latitude,
         bottom: center.latitude - size.latitude,
-        left:   center.longitude - size.longitude,
-        right:  center.longitude + size.longitude,
+        left: center.longitude - size.longitude,
+        right: center.longitude + size.longitude,
     }
 }
 
-interface Bounds {
+export interface Bounds {
     minlat: number
     minlon: number
     maxlat: number
     maxlon: number
 }
 
-interface Element {
+export interface Element {
     changeset: number
     id: number
     lat: number
@@ -36,7 +39,7 @@ interface Element {
     version: number
 }
 
-interface Map {
+export interface Map {
     attribution: string
     bounds: Bounds
     copyright: string
@@ -52,7 +55,7 @@ interface Map {
  */
 export async function map(bbox: BoundingBox): Promise<Map> {
     const response = await fetch(
-        `https://www.openstreetmap.org/api/0.6/map.json?bbox=${bbox.left},${bbox.bottom},${bbox.right},${bbox.top}`
+        `https://www.openstreetmap.org/api/0.6/map.json?bbox=${bbox.left},${bbox.bottom},${bbox.right},${bbox.top}`,
     )
 
     if (!response.ok) {

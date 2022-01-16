@@ -1,12 +1,14 @@
 {
-    "compilerOptions": {
-        "strict": true,
-        "noUnusedLocals": true,
-        "jsx": "react",
-        "jsxFactory": "h",
-        "baseUrl": "./",
-        "paths": {
-            "*": ["src/*"]
-        }
+  "compilerOptions": {
+    "strict": true,
+    "noUnusedLocals": true,
+    "target": "ES2019",
+    "jsx": "react",
+    "jsxFactory": "h",
+    "baseUrl": "./",
+    "moduleResolution": "node",
+    "paths": {
+      "*": ["src/*"]
     }
+  }
 }
