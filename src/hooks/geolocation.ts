@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'preact/hooks'
+
 export function useGeolocation(
     options?: PositionOptions,
-): [GeolocationPosition | null, GeolocationPositionError | null] {
+): [GeolocationCoordinates | null, GeolocationPositionError | null] {
+    const { enableHighAccuracy, maximumAge, timeout } = options ?? {}
+
     const [pos, setPos] = useState<GeolocationPosition | null>(null)
     const [err, setErr] = useState<GeolocationPositionError | null>(null)
-    const {
-        enableHighAccuracy,
-        maximumAge,
-        timeout,
-    } = options ?? {}
+
     useEffect(() => {
         const cancel = navigator.geolocation.watchPosition(
             pos => {
@@ -29,5 +28,6 @@ export function useGeolocation(
             navigator.geolocation.clearWatch(cancel)
         }
     }, [enableHighAccuracy, maximumAge, timeout])
-    return [pos, err]
+
+    return [pos?.coords ?? null, err]
 }

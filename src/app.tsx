@@ -1,97 +1,67 @@
-import { cartesian, polar, SphericalPoint } from 'coords'
+import { distance, SphericalPoint } from 'coords'
+import { PointOfInterest } from 'database'
 import { useGeolocation } from 'hooks/geolocation'
-import { get, set } from 'idb-keyval'
-import { centeredBoundingBox, Element, map } from 'openstreetmaps'
+import { getPoints } from 'poi'
 import { FunctionalComponent, h, render } from 'preact'
-import { useCallback, useEffect, useState } from 'preact/hooks'
-import { Map } from './components/map'
+import { useEffect, useState } from 'preact/hooks'
+
+interface PointOfInterestDistance extends PointOfInterest {
+    distance: number
+}
 
 const App: FunctionalComponent = () => {
-    const [loc] = useGeolocation({ enableHighAccuracy: true })
-    const [homePos, setHomePos] = useState<SphericalPoint | null>(null)
-    const [elements, setElements] = useState<Element[]>([])
-
-    const pos: SphericalPoint | undefined = loc?.coords
+    const [pos] = useGeolocation({ enableHighAccuracy: true })
+    const [lastFech, setLastFech] = useState<SphericalPoint | null>(null)
+    const [points, setPoints] = useState<PointOfInterest[]>([])
 
     useEffect(() => {
-        get('home').then((h: SphericalPoint) => {
-            if (h !== undefined) {
-                setHomePos(h)
-                map(
-                    centeredBoundingBox(h, {
-                        longitude: 0.005,
-                        latitude: 0.005,
-                    }),
-                ).then(m => {
-                    setElements(
-                        m.elements.filter(
-                            e => e.type === 'node' && e.tags?.name,
-                        ),
-                    )
-                })
-            }
-        })
-    }, [])
-    const setHome = useCallback(
-        function () {
-            setHomePos(pos ?? null)
-            if (pos) {
-                set('home', {
-                    latitude: pos.latitude,
-                    longitude: pos.longitude,
-                })
-            }
-        },
-        [pos, setHomePos],
-    )
+        if (pos === null) {
+            return
+        }
+        const radius = 0.01
+        if (lastFech === null || distance(pos, lastFech) > radius / 2) {
+            getPoints(pos, radius).then(p => {
+                setPoints(p)
+            })
+        }
+    }, [pos, lastFech, setLastFech])
 
-    if (pos === undefined) {
+    if (pos === null) {
         return <div>Could not find location</div>
     }
+
+    const poids: PointOfInterestDistance[] = points
+        .map(p => ({
+            ...p,
+            distance: distance(p.location, pos),
+        }))
+        .sort(byKey('distance'))
 
     return (
         <div>
             <h1>Game</h1>
             <div>
                 ({pos.latitude}, {pos.longitude})
-                <button onClick={setHome}>Set Home</button>
             </div>
-            <div>
-                <h3>Home</h3>({homePos?.latitude}, {homePos?.longitude})
-            </div>
-            {homePos && pos && <Coords home={homePos} pos={pos}></Coords>}
 
-            <div>
+            <pre>{JSON.stringify(poids, undefined, '    ')}</pre>
+            {/* <div>
                 <Map elements={elements} scale={0.5} position={pos} />
-            </div>
+            </div> */}
         </div>
     )
 }
 
-interface CoordsProps {
-    home: SphericalPoint
-    pos: SphericalPoint
-}
-
-const Coords: FunctionalComponent<CoordsProps> = props => {
-    const { distance, bearing } = polar(props.home, props.pos)
-    const { x, y } = cartesian(props.home, props.pos)
-    return (
-        <div>
-            <p>
-                <h3>Polar</h3>
-                <b>bearing:</b> {bearing}
-                <br />
-                <b>distance:</b> {distance}
-            </p>
-            <p>
-                <h3>Cartesian</h3>
-                <b>x:</b> {x}
-                <br />
-                <b>y:</b> {y}
-            </p>
-        </div>
-    )
+function byKey<T, K extends keyof T & string>(key: K): (a: T, b: T) => number {
+    return (a: T, b: T) => {
+        if (a[key] > b[key]) {
+            return 1
+        }
+        if (a[key] < b[key]) {
+            return -1
+        }
+        return 0
+    }
 }
 
 render(<App />, document.getElementById('app')!)

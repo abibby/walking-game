@@ -11,7 +11,7 @@ export interface Point {
     y: number
 }
 
-function distance(a: SphericalPoint, b: SphericalPoint): number {
+export function distance(a: SphericalPoint, b: SphericalPoint): number {
     const R = 6371e3 // metres
     const aLat = (a.latitude * Math.PI) / 180
     const bLat = (b.latitude * Math.PI) / 180
