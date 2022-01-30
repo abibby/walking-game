@@ -52,7 +52,6 @@ export async function updateChunks(
         const elements = m.elements.filter(
             e => e.type === 'node' && e.tags?.name,
         )
-        console.log('elements', elements)
 
         for (const element of elements) {
             DB.pois.put({
@@ -75,11 +74,6 @@ async function getChunks(
     location: SphericalPoint,
     radius: number,
 ): Promise<readonly Chunk[]> {
-    console.log(
-        [location.latitude - radius, location.longitude - radius],
-        [location.latitude + radius, location.longitude + radius],
-    )
-
     const chunks = await DB.chunks
         .where(['location.latitude', 'location.longitude'])
         .between(

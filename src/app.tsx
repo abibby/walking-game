@@ -4,6 +4,8 @@ import { useGeolocation } from 'hooks/geolocation'
 import { getPoints } from 'poi'
 import { FunctionalComponent, h, render } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
+import { byKey } from 'utils'
+import { Inventory } from './components/inventory'
 
 interface PointOfInterestDistance extends PointOfInterest {
     distance: number
@@ -13,18 +15,22 @@ const App: FunctionalComponent = () => {
     const [pos] = useGeolocation({ enableHighAccuracy: true })
     const [lastFech, setLastFech] = useState<SphericalPoint | null>(null)
     const [points, setPoints] = useState<PointOfInterest[]>([])
+    const [loadingPoints, setLoadingPoints] = useState(false)
 
     useEffect(() => {
         if (pos === null) {
             return
         }
         const radius = 0.01
-        if (lastFech === null || distance(pos, lastFech) > radius / 2) {
+        if (lastFech === null || distance(pos, lastFech) > 100) {
+            setLoadingPoints(true)
             getPoints(pos, radius).then(p => {
                 setPoints(p)
+                setLoadingPoints(false)
+                setLastFech(pos)
             })
         }
-    }, [pos, lastFech, setLastFech])
+    }, [pos, lastFech, setLastFech, setLoadingPoints])
 
     if (pos === null) {
         return <div>Could not find location</div>
@@ -44,24 +50,20 @@ const App: FunctionalComponent = () => {
                 ({pos.latitude}, {pos.longitude})
             </div>
 
-            <pre>{JSON.stringify(poids, undefined, '    ')}</pre>
-            {/* <div>
-                <Map elements={elements} scale={0.5} position={pos} />
-            </div> */}
+            <Inventory />
+
+            {loadingPoints && 'Loading ...'}
+
+            <div>
+                {poids.slice(0, 4).map(p => (
+                    <div style='border: solid 1px;'>
+                        <div>{p.name}</div>
+                        <div>{Math.round(p.distance)}m</div>
+                    </div>
+                ))}
+            </div>
         </div>
     )
-}
-
-function byKey<T, K extends keyof T & string>(key: K): (a: T, b: T) => number {
-    return (a: T, b: T) => {
-        if (a[key] > b[key]) {
-            return 1
-        }
-        if (a[key] < b[key]) {
-            return -1
-        }
-        return 0
-    }
 }
 
 render(<App />, document.getElementById('app')!)
