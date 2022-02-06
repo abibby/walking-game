@@ -1,4 +1,5 @@
 import { DB } from 'database'
+import { Random } from 'random'
 
 export enum Item {
     A = 'a',
@@ -7,26 +8,36 @@ export enum Item {
     D = 'd',
     E = 'e',
     F = 'f',
-    G = 'g',
-    H = 'h',
-    I = 'i',
-    J = 'j',
-    K = 'k',
-    L = 'l',
-    M = 'm',
-    N = 'n',
-    O = 'o',
-    P = 'p',
-    Q = 'q',
-    R = 'r',
-    S = 's',
-    T = 't',
-    U = 'u',
-    V = 'v',
-    W = 'w',
-    X = 'x',
-    Y = 'y',
-    Z = 'z',
+    // G = 'g',
+    // H = 'h',
+    // I = 'i',
+    // J = 'j',
+    // K = 'k',
+    // L = 'l',
+    // M = 'm',
+    // N = 'n',
+    // O = 'o',
+    // P = 'p',
+    // Q = 'q',
+    // R = 'r',
+    // S = 's',
+    // T = 't',
+    // U = 'u',
+    // V = 'v',
+    // W = 'w',
+    // X = 'x',
+    // Y = 'y',
+    // Z = 'z',
+}
+
+export function randomItem(rand: Random): Item {
+    const keys = Object.keys(Item)
+    const r = rand()
+    const i = Math.floor(r * keys.length)
+    console.log(r, i, keys[i])
+
+    // return String(i)
+    return (Item as any)[keys[i]]
 }
 
 export function getItemName(i: Item): string {

@@ -1,7 +1,10 @@
+import { Mutex } from 'async-mutex'
 import { SphericalPoint } from 'coords'
-import { Chunk, DB } from 'database'
+import { Chunk, DB, PointOfInterest } from 'database'
 import { centeredBoundingBox, map } from 'openstreetmaps'
 import { v4 as uuidv4 } from 'uuid'
+
+const updateChunksMtx = new Mutex()
 
 const chunkSize = 0.005
 
@@ -9,65 +12,67 @@ export async function updateChunks(
     location: SphericalPoint,
     radius: number,
 ): Promise<void> {
-    const chunkPoint = toChunkPoint(location)
-    const chunkRadius = radius / chunkSize
-    console.log(chunkPoint)
+    return updateChunksMtx.runExclusive(async () => {
+        const chunkPoint = toChunkPoint(location)
+        const chunkRadius = radius / chunkSize
 
-    const chunks = await getChunks(chunkPoint, chunkRadius)
+        const chunks = await getChunks(chunkPoint, chunkRadius)
 
-    const neededChunks: SphericalPoint[] = []
+        const neededChunks: SphericalPoint[] = []
 
-    for (
-        let long = chunkPoint.longitude - chunkRadius;
-        long < chunkPoint.longitude + chunkRadius;
-        long++
-    ) {
         for (
-            let lat = chunkPoint.latitude - chunkRadius;
-            lat < chunkPoint.latitude + chunkRadius;
-            lat++
+            let long = chunkPoint.longitude - chunkRadius;
+            long < chunkPoint.longitude + chunkRadius;
+            long++
         ) {
-            if (
-                !chunks.find(
-                    c =>
-                        c.location.latitude === lat &&
-                        c.location.longitude === long,
-                )
+            for (
+                let lat = chunkPoint.latitude - chunkRadius;
+                lat < chunkPoint.latitude + chunkRadius;
+                lat++
             ) {
-                neededChunks.push({
-                    latitude: lat,
-                    longitude: long,
-                })
+                if (
+                    !chunks.find(
+                        c =>
+                            c.location.latitude === lat &&
+                            c.location.longitude === long,
+                    )
+                ) {
+                    neededChunks.push({
+                        latitude: lat,
+                        longitude: long,
+                    })
+                }
             }
         }
-    }
 
-    for (const chunk of neededChunks) {
-        const m = await map(
-            centeredBoundingBox(fromChunkPoint(chunk), {
-                longitude: chunkSize,
-                latitude: chunkSize,
-            }),
-        )
-        const elements = m.elements.filter(
-            e => e.type === 'node' && e.tags?.name,
-        )
+        for (const chunk of neededChunks) {
+            const m = await map(
+                centeredBoundingBox(fromChunkPoint(chunk), {
+                    longitude: chunkSize,
+                    latitude: chunkSize,
+                }),
+            )
+            const elements = m.elements
 
-        for (const element of elements) {
-            DB.pois.put({
-                id: element.id,
-                name: element.tags?.name ?? 'N/A',
-                location: {
-                    longitude: element.lon,
-                    latitude: element.lat,
-                },
+            DB.pois.bulkPut(
+                elements.map(element => {
+                    const p = new PointOfInterest()
+                    p.id = element.id
+                    p.location = {
+                        longitude: element.lon,
+                        latitude: element.lat,
+                    }
+                    p.element = element
+                    return p
+                }),
+            )
+
+            DB.chunks.put({
+                id: uuidv4(),
+                location: chunk,
             })
         }
-        DB.chunks.put({
-            id: uuidv4(),
-            location: chunk,
-        })
-    }
+    })
 }
 
 async function getChunks(

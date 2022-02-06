@@ -31,7 +31,7 @@ export interface Element {
     id: number
     lat: number
     lon: number
-    tags?: Record<string, string>
+    tags?: Record<string, string | undefined>
     timestamp: string
     type: string
     uid: number

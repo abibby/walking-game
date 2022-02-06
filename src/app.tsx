@@ -1,15 +1,12 @@
+import { POI } from 'components/poi'
 import { distance, SphericalPoint } from 'coords'
 import { PointOfInterest } from 'database'
 import { useGeolocation } from 'hooks/geolocation'
 import { getPoints } from 'poi'
 import { FunctionalComponent, h, render } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
-import { byKey } from 'utils'
+import { by } from 'utils'
 import { Inventory } from './components/inventory'
-
-interface PointOfInterestDistance extends PointOfInterest {
-    distance: number
-}
 
 const App: FunctionalComponent = () => {
     const [pos] = useGeolocation({ enableHighAccuracy: true })
@@ -36,12 +33,9 @@ const App: FunctionalComponent = () => {
         return <div>Could not find location</div>
     }
 
-    const poids: PointOfInterestDistance[] = points
-        .map(p => ({
-            ...p,
-            distance: distance(p.location, pos),
-        }))
-        .sort(byKey('distance'))
+    const pois = points
+        .filter(p => p.distance(pos) < 1000 && p.element.tags?.amenity)
+        .sort(by(p => p.distance(pos)))
 
     return (
         <div>
@@ -55,11 +49,8 @@ const App: FunctionalComponent = () => {
             {loadingPoints && 'Loading ...'}
 
             <div>
-                {poids.slice(0, 4).map(p => (
-                    <div style='border: solid 1px;'>
-                        <div>{p.name}</div>
-                        <div>{Math.round(p.distance)}m</div>
-                    </div>
+                {pois.map(p => (
+                    <POI poi={p} pos={pos} />
                 ))}
             </div>
         </div>
