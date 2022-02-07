@@ -33,6 +33,8 @@ const App: FunctionalComponent = () => {
         return <div>Could not find location</div>
     }
 
+    // https://wiki.openstreetmap.org/wiki/Map_features#Amenity
+    // TODO: filter by amenity
     const pois = points
         .filter(p => p.distance(pos) < 1000 && p.element.tags?.amenity)
         .sort(by(p => p.distance(pos)))
