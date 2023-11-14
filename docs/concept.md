@@ -2,8 +2,14 @@
 
 A game to make people want to walk around.
 
-# Game Loop
+# Concept
 
-Walk to a place and trade resources. Resources will be used to upgrade a home
-base. The home base will give you various resources each day based on what
-upgrades you have.
+-   You are a in charge of a city/town that will slowly improve.
+-   Loops
+    -   Walking
+        -   walk to a place
+        -   collect a person or people
+    -   City Building
+        -   set the leaders of your city to set the direction your city will grow
+-   Ideas
+    -   People in your city will slowly die off so you will need to constantly collect more
